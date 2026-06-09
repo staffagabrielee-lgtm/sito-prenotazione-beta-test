@@ -224,11 +224,10 @@ fetch('https://api.jsonbin.io/v3/b/' + BIN_ID + '/latest', {
 .catch(function() {});
 
 // Imposta data minima = domani
-var tomorrow = new Date();
-tomorrow.setDate(tomorrow.getDate() + 1);
-var minDate = tomorrow.getFullYear() + '-'
-  + String(tomorrow.getMonth() + 1).padStart(2,'0') + '-'
-  + String(tomorrow.getDate()).padStart(2,'0');
+var today = new Date();
+var minDate = today.getFullYear() + '-'
+  + String(today.getMonth() + 1).padStart(2,'0') + '-'
+  + String(today.getDate()).padStart(2,'0');
 document.getElementById('f-data').min = minDate;
 
 function makeSlots(sh, sm, eh, em) {
