@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prenota un Tavolo — Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --dark: #1a2a5e; --accent: #e8601c; --bg: #fff;
+      --surface: #f0f4fa; --border: #d0d8ea; --muted: #6b7a99;
+    }
+    body { background: var(--bg); font-family: 'Segoe UI', system-ui, sans-serif; color: var(--dark); min-height: 100vh; }
+
+    /* topbar */
+    .topbar { position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid var(--border); padding: 0 32px; height: 60px; display: flex; align-items: center; gap: 12px; }
+    .topbar a { font-size: .88rem; font-weight: 600; color: var(--muted); text-decoration: none; }
+    .topbar a:hover { color: var(--dark); }
+    .topbar-title { font-size: .95rem; font-weight: 700; }
+    .badge { margin-left: auto; background: #fff4e5; color: #b05800; border: 1px solid #f0c070; border-radius: 20px; padding: 3px 10px; font-size: .72rem; font-weight: 700; }
+
+    /* hero */
+    .hero { background: var(--dark); padding: 64px 32px 52px; text-align: center; }
+    .hero h1 { font-size: clamp(1.8rem,4.5vw,2.8rem); font-weight: 800; color: #fff; margin-bottom: 10px; }
+    .hero h1 span { color: #93c5fd; }
+    .hero p { font-size: .97rem; color: rgba(255,255,255,.6); max-width: 440px; margin: 0 auto; line-height: 1.6; }
+    .arrows { display: flex; justify-content: center; gap: 10px; margin-top: 28px; }
+    .arrow { width: 22px; height: 22px; border-right: 3px solid rgba(255,255,255,.35); border-bottom: 3px solid rgba(255,255,255,.35); transform: rotate(45deg); animation: ap 1.4s ease-in-out infinite; }
+    .arrow:nth-child(2) { animation-delay:.2s; opacity:.6; }
+    .arrow:nth-child(3) { animation-delay:.4s; opacity:.3; }
+    @keyframes ap { 0%,100% { opacity:1; transform:rotate(45deg) translateY(0); } 50% { opacity:.15; transform:rotate(45deg) translateY(6px); } }
+
+    /* step indicator */
+    .steps-wrap { max-width: 580px; margin: 0 auto; padding: 32px 32px 0; display: flex; align-items: center; }
+    .step-dot { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; position: relative; }
+    .step-dot::after { content:''; position:absolute; top:16px; left:calc(50% + 18px); right:calc(-50% + 18px); height:2px; background:var(--border); transition:background .3s; z-index:0; }
+    .step-dot:last-child::after { display:none; }
+    .step-dot.done::after { background:var(--dark); }
+    .step-circle { width:32px; height:32px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:.8rem; font-weight:700; color:var(--muted); background:#fff; z-index:1; position:relative; transition:all .25s; }
+    .step-dot.active .step-circle, .step-dot.done .step-circle { background:var(--dark); border-color:var(--dark); color:#fff; }
+    .step-label { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; text-align:center; }
+    .step-dot.active .step-label, .step-dot.done .step-label { color:var(--dark); }
+
+    /* form */
+    .form-wrap { max-width: 580px; margin: 0 auto; padding: 28px 32px 80px; }
+    .step-card { background:var(--surface); border-radius:20px; padding:32px 36px 36px; display:none; }
+    .step-card.active { display:block; }
+    .card-title { font-size:1rem; font-weight:800; color:var(--dark); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .card-sub { font-size:.87rem; color:var(--muted); margin-bottom:24px; line-height:1.5; }
+
+    /* fields */
+    .row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+    .row1 { margin-bottom:14px; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    .field label { font-size:.72rem; font-weight:700; color:var(--dark); text-transform:uppercase; letter-spacing:.8px; }
+    .field input, .field select { width:100%; padding:13px 15px; border:1.5px solid var(--border); border-radius:11px; font-size:.96rem; color:var(--dark); background:#fff; outline:none; transition:border-color .2s; appearance:auto; }
+    .field input::placeholder { color:#b0bccf; }
+    .field input:focus, .field select:focus { border-color:var(--dark); box-shadow:0 0 0 3px rgba(26,42,94,.08); }
+    .field select:disabled { color:#b0bccf; background:#f8f9fc; }
+
+    /* alert box */
+    .date-alert { display:none; border-radius:10px; padding:11px 15px; font-size:.86rem; font-weight:600; line-height:1.5; margin-top:6px; }
+    .date-alert.is-closed { background:#fee2e2; color:#991b1b; border:1.5px solid #fca5a5; }
+    .date-alert.is-full   { background:#fef9c3; color:#854d0e; border:1.5px solid #fde047; }
+    .date-alert.is-partial{ background:#fff4e5; color:#92400e; border:1.5px solid #fde68a; }
+    .date-alert.is-info   { background:#eff6ff; color:#1e40af; border:1.5px solid #bfdbfe; }
+
+    /* recap */
+    .recap { background:#fff; border:1.5px solid var(--border); border-radius:13px; padding:16px 18px; margin-bottom:18px; }
+    .recap-title { font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:10px; }
+    .recap-row { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eef1f7; font-size:.88rem; }
+    .recap-row:last-child { border-bottom:none; }
+    .recap-row span:first-child { color:var(--muted); }
+    .recap-row span:last-child { font-weight:700; }
+
+    /* buttons */
+    .btn-next { display:block; width:100%; margin-top:24px; padding:16px; background:var(--dark); color:#fff; border:none; border-radius:11px; font-size:1rem; font-weight:700; cursor:pointer; transition:background .2s,transform .15s; }
+    .btn-next:hover { background:#2a3d8a; transform:translateY(-2px); }
+    .btn-next:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+    .btn-back { display:inline-flex; align-items:center; gap:5px; margin-top:12px; font-size:.87rem; font-weight:600; color:var(--muted); background:none; border:none; cursor:pointer; }
+    .btn-back:hover { color:var(--dark); }
+    .submit-error { font-size:.82rem; color:#c0392b; font-weight:600; display:none; margin-top:8px; text-align:center; }
+
+    /* success */
+    #view-success { display:none; max-width:580px; margin:0 auto; padding:72px 32px 80px; text-align:center; }
+    .success-circle { width:76px; height:76px; background:#d1fae5; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 24px; }
+    #view-success h2 { font-size:1.7rem; font-weight:800; color:var(--dark); margin-bottom:8px; }
+    #view-success p { color:var(--muted); line-height:1.65; max-width:360px; margin:0 auto 28px; }
+    #view-success a { display:inline-block; padding:12px 28px; background:var(--dark); color:#fff; border-radius:10px; font-weight:700; text-decoration:none; font-size:.9rem; }
+    #view-success a:hover { background:var(--accent); }
+
+    @media (max-width:580px) {
+      .row2 { grid-template-columns:1fr; }
+      .step-card { padding:22px 18px 26px; }
+      .form-wrap { padding:22px 16px 60px; }
+      .hero { padding:52px 20px 40px; }
+      .steps-wrap { padding:24px 16px 0; }
+      .topbar { padding:0 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html">← Home</a>
+  <span class="topbar-title">Prenotazione Tavolo</span>
+  <span class="badge">DEMO</span>
+</div>
+
+<section class="hero">
+  <h1>Prenota il tuo<br><span>tavolo</span></h1>
+  <p>Compila il modulo in due semplici passaggi.</p>
+  <div class="arrows"><div class="arrow"></div><div class="arrow"></div><div class="arrow"></div></div>
+</section>
+
+<div class="steps-wrap">
+  <div class="step-dot active" id="dot-1">
+    <div class="step-circle">1</div>
+    <span class="step-label">Disponibilità</span>
+  </div>
+  <div class="step-dot" id="dot-2">
+    <div class="step-circle">2</div>
+    <span class="step-label">I tuoi dati</span>
+  </div>
+</div>
+
+<div class="form-wrap">
+
+  <!-- STEP 1 -->
+  <div class="step-card active" id="step-1">
+    <p class="card-title">Scegli data e orario</p>
+    <p class="card-sub">Seleziona il numero di persone, la data e la fascia oraria.</p>
+
+    <div class="row2">
+      <div class="field">
+        <label for="f-persone">Quanti siete?</label>
+        <select id="f-persone">
+          <option value="" disabled selected>Seleziona</option>
+          <option value="1">1 persona</option>
+          <option value="2">2 persone</option>
+          <option value="3">3 persone</option>
+          <option value="4">4 persone</option>
+          <option value="5">5 persone</option>
+          <option value="6">6 persone</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-data">Data</label>
+        <input type="date" id="f-data">
+      </div>
+    </div>
+
+    <div class="row1">
+      <div class="field">
+        <label for="f-orario">Fascia oraria</label>
+        <select id="f-orario" disabled>
+          <option value="" disabled selected>Scegli prima una data</option>
+        </select>
+        <div class="date-alert" id="date-alert"></div>
+      </div>
+    </div>
+
+    <button class="btn-next" id="btn-step1">Continua →</button>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card" id="step-2">
+    <p class="card-title">I tuoi dati</p>
+    <p class="card-sub">Inserisci i tuoi dati per confermare la prenotazione.</p>
+
+    <div class="recap" id="recap">
+      <p class="recap-title">Riepilogo</p>
+      <div class="recap-row"><span>Persone</span><span id="r-persone">—</span></div>
+      <div class="recap-row"><span>Data</span><span id="r-data">—</span></div>
+      <div class="recap-row"><span>Orario</span><span id="r-orario">—</span></div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="f-nome">Nome e Cognome</label>
+        <input type="text" id="f-nome" placeholder="Mario Rossi">
+      </div>
+      <div class="field">
+        <label for="f-email">Email</label>
+        <input type="email" id="f-email" placeholder="mario@esempio.it">
+      </div>
+    </div>
+    <div class="row1">
+      <div class="field">
+        <label for="f-telefono">Telefono</label>
+        <input type="tel" id="f-telefono" placeholder="+39 333 000 0000">
+      </div>
+    </div>
+
+    <p class="submit-error" id="err-submit"></p>
+    <button class="btn-next" id="btn-submit">Conferma Prenotazione</button>
+    <button class="btn-back" id="btn-back">← Modifica data/orario</button>
+  </div>
+
+</div>
+
+<div id="view-success">
+  <div class="success-circle">✓</div>
+  <h2>Prenotazione confermata!</h2>
+  <p>Abbiamo ricevuto la tua richiesta. Riceverai una conferma via email a breve.</p>
+  <a href="index.html">← Torna alla home</a>
+</div>
+
+<script>
+var BIN_ID  = '6a27c744da38895dfe9ec4b6';
+var API_KEY = '$2a$10$zBwelpwQgG216q.q8YasGeJxALIxr1LJm/E9Lk9HhkIlr3uVXtmaK';
+var blockedDates = [];
+
+// Carica date bloccate (non blocca il resto se fallisce)
+fetch('https://api.jsonbin.io/v3/b/' + BIN_ID + '/latest', {
+  headers: { 'X-Master-Key': API_KEY }
+})
+.then(function(r) { return r.json(); })
+.then(function(d) {
+  if (d && d.record && Array.isArray(d.record.blocked)) {
+    blockedDates = d.record.blocked;
+  }
+})
+.catch(function() {});
+
+// Imposta data minima = domani
+var tomorrow = new Date();
+tomorrow.setDate(tomorrow.getDate() + 1);
+var minDate = tomorrow.getFullYear() + '-'
+  + String(tomorrow.getMonth() + 1).padStart(2,'0') + '-'
+  + String(tomorrow.getDate()).padStart(2,'0');
+document.getElementById('f-data').min = minDate;
+
+function makeSlots(sh, sm, eh, em) {
+  var res = [], h = sh, m = sm;
+  while (h * 60 + m + 30 <= eh * 60 + em) {
+    res.push(String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0'));
+    m += 30; if (m >= 60) { h++; m -= 60; }
+  }
+  return res;
+}
+
+function getSlots(day) {
+  if (day === 1) return [];
+  if (day === 0) return makeSlots(12,0,14,45);
+  if (day === 2 || day === 3) return makeSlots(12,30,14,45).concat(makeSlots(19,30,22,45));
+  return makeSlots(12,0,14,30).concat(makeSlots(19,30,22,45));
+}
+
+function showAlert(type, html) {
+  var el = document.getElementById('date-alert');
+  el.className = 'date-alert ' + type;
+  el.innerHTML = html;
+  el.style.display = 'block';
+}
+
+function hideAlert() {
+  var el = document.getElementById('date-alert');
+  el.style.display = 'none';
+  el.className = 'date-alert';
+}
+
+// ── Cambio data ──
+document.getElementById('f-data').addEventListener('change', function() {
+  var val = this.value;
+  var parts = val.split('-');
+  var day = new Date(+parts[0], +parts[1] - 1, +parts[2]).getDay();
+  var sel = document.getElementById('f-orario');
+
+  hideAlert();
+  sel.innerHTML = '';
+  sel.disabled = true;
+
+  // Lunedì chiuso
+  if (day === 1) {
+    sel.innerHTML = '<option disabled selected>Data non disponibile</option>';
+    showAlert('is-closed', '🔴 <strong>Ristorante chiuso</strong> — il lunedì siamo chiusi, scegli un\'altra data');
+    return;
+  }
+
+  var blocks      = blockedDates.filter(function(b) { return b.date === val; });
+  var blockAll    = blocks.some(function(b) { return b.service === 'all'; });
+  var blockLunch  = blocks.some(function(b) { return b.service === 'lunch'; });
+  var blockDinner = blocks.some(function(b) { return b.service === 'dinner'; });
+
+  if (blockAll) {
+    sel.innerHTML = '<option disabled selected>Data non disponibile</option>';
+    showAlert('is-full', '⚠️ <strong>Ristorante al completo</strong> — non ci sono posti in questa data');
+    return;
+  }
+
+  var list = getSlots(day);
+  if (blockLunch)  list = list.filter(function(t) { return parseInt(t) >= 17; });
+  if (blockDinner) list = list.filter(function(t) { return parseInt(t) < 17; });
+
+  if (blockLunch)  showAlert('is-partial', '⚠ <strong>Pranzo al completo</strong> — disponibile solo la cena');
+  if (blockDinner) showAlert('is-partial', '⚠ <strong>Cena al completo</strong> — disponibile solo il pranzo');
+  if (day === 0 && !blockLunch) showAlert('is-info', 'ℹ La domenica siamo aperti solo a pranzo');
+
+  if (list.length === 0) {
+    sel.innerHTML = '<option disabled selected>Nessun orario disponibile</option>';
+    return;
+  }
+
+  sel.disabled = false;
+  var ph = document.createElement('option');
+  ph.value = ''; ph.disabled = true; ph.selected = true;
+  ph.textContent = 'Seleziona orario';
+  sel.appendChild(ph);
+  list.forEach(function(t) {
+    var o = document.createElement('option');
+    o.value = t; o.textContent = t;
+    sel.appendChild(o);
+  });
+});
+
+// ── Step 1 → 2 ──
+document.getElementById('btn-step1').addEventListener('click', function() {
+  var persone = document.getElementById('f-persone').value;
+  var data    = document.getElementById('f-data').value;
+  var orario  = document.getElementById('f-orario').value;
+  if (!persone || !data || !orario) {
+    if (!persone) document.getElementById('f-persone').style.borderColor = '#c0392b';
+    if (!data)    document.getElementById('f-data').style.borderColor    = '#c0392b';
+    if (!orario)  document.getElementById('f-orario').style.borderColor  = '#c0392b';
+    return;
+  }
+  var parts = data.split('-');
+  var ds = new Date(+parts[0], +parts[1]-1, +parts[2]).toLocaleDateString('it-IT', {weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('r-persone').textContent = persone + (persone==='1' ? ' persona' : ' persone');
+  document.getElementById('r-data').textContent    = ds.charAt(0).toUpperCase() + ds.slice(1);
+  document.getElementById('r-orario').textContent  = orario;
+
+  document.getElementById('step-1').classList.remove('active');
+  document.getElementById('step-2').classList.add('active');
+  document.getElementById('dot-1').classList.remove('active');
+  document.getElementById('dot-1').classList.add('done');
+  document.getElementById('dot-2').classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+// ── Step 2 → 1 ──
+document.getElementById('btn-back').addEventListener('click', function() {
+  document.getElementById('step-2').classList.remove('active');
+  document.getElementById('step-1').classList.add('active');
+  document.getElementById('dot-2').classList.remove('active');
+  document.getElementById('dot-1').classList.remove('done');
+  document.getElementById('dot-1').classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+// ── Invio prenotazione ──
+document.getElementById('btn-submit').addEventListener('click', function() {
+  var nome     = document.getElementById('f-nome').value.trim();
+  var email    = document.getElementById('f-email').value.trim();
+  var telefono = document.getElementById('f-telefono').value.trim();
+  var errEl    = document.getElementById('err-submit');
+
+  if (!nome || !email) {
+    if (!nome)  document.getElementById('f-nome').style.borderColor  = '#c0392b';
+    if (!email) document.getElementById('f-email').style.borderColor = '#c0392b';
+    return;
+  }
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Invio in corso…';
+  errEl.style.display = 'none';
+
+  var payload = {
+    nome: nome, email: email, telefono: telefono,
+    persone: document.getElementById('f-persone').value,
+    data:    document.getElementById('f-data').value,
+    orario:  document.getElementById('f-orario').value,
+    timestamp: new Date().toISOString()
+  };
+
+  var fd = new FormData();
+  Object.keys(payload).forEach(function(k) { fd.append(k, payload[k]); });
+  fd.append('_subject', 'Nuova Prenotazione — Demo');
+  fd.append('_template', 'table');
+
+  // Invia email
+  fetch('https://formsubmit.co/ajax/gabrielestaffa2003@gmail.com', {
+    method: 'POST', headers: { 'Accept': 'application/json' }, body: fd
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(res) {
+    if (!res.success && res.success !== undefined) throw new Error('email');
+
+    // Salva nel database
+    return fetch('https://api.jsonbin.io/v3/b/' + BIN_ID + '/latest', {
+      headers: { 'X-Master-Key': API_KEY }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(existing) {
+      var record   = existing.record || {};
+      var bookings = Array.isArray(record.bookings) ? record.bookings : [];
+      bookings.push(payload);
+      return fetch('https://api.jsonbin.io/v3/b/' + BIN_ID, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify({ blocked: record.blocked || [], bookings: bookings })
+      });
+    })
+    .catch(function() {}); // se il DB fallisce, l'email è già andata
+  })
+  .then(function() {
+    document.querySelector('.steps-wrap').style.display = 'none';
+    document.querySelector('.form-wrap').style.display  = 'none';
+    document.getElementById('view-success').style.display = 'block';
+  })
+  .catch(function() {
+    errEl.textContent = 'Errore nell\'invio. Riprova tra qualche secondo.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Conferma Prenotazione';
+  });
+});
+
+// Reset bordo rosso su interazione
+['f-persone','f-data','f-nome','f-email'].forEach(function(id) {
+  var el = document.getElementById(id);
+  el.addEventListener('change', function() { this.style.borderColor = ''; });
+  el.addEventListener('input',  function() { this.style.borderColor = ''; });
+});
+</script>
+</body>
+</html>

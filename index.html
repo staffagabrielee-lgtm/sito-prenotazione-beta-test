@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema di Prenotazione</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1a1a2e;
+    }
+
+    .logo {
+      margin-bottom: 16px;
+      font-size: 2rem;
+    }
+
+    h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      text-align: center;
+      color: #1a1a2e;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #666;
+      margin-bottom: 56px;
+      text-align: center;
+    }
+
+    .actions {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-cliente {
+      background: #1a1a2e;
+      color: #fff;
+    }
+
+    .btn-proprietario {
+      background: #e8601c;
+      color: #fff;
+    }
+
+    .footer {
+      position: fixed;
+      bottom: 24px;
+      font-size: 0.78rem;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="logo">🍽️</div>
+  <h1>Sistema di Prenotazione</h1>
+  <p class="subtitle">Demo interattiva — scegli come vuoi accedere</p>
+
+  <div class="actions">
+    <a href="cliente.html" class="btn btn-cliente">
+      👤 Accesso Cliente
+    </a>
+    <a href="proprietario.html" class="btn btn-proprietario">
+      🏠 Accesso Proprietario
+    </a>
+  </div>
+
+  <p class="footer">Demo riservata ai proprietari di ristorante</p>
+
+</body>
+</html>
