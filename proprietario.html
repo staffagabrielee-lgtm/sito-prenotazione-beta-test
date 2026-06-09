@@ -146,9 +146,7 @@ var bookings = [];
 var SVC = { all:'Tutto il giorno', lunch:'Solo pranzo', dinner:'Solo cena' };
 
 // Data minima
-var tmw = new Date(); tmw.setDate(tmw.getDate() + 1);
-document.getElementById('new-date').min =
-  tmw.getFullYear() + '-' + String(tmw.getMonth()+1).padStart(2,'0') + '-' + String(tmw.getDate()).padStart(2,'0');
+// Nessun limite: il proprietario può bloccare qualsiasi data inclusa oggi
 
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(function(b,i) {
